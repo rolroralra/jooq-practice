@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: jooq-practice
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/sakila
+    username: admin
+    password: admin
+
+  docker:
+    compose:
+      file: docker/mysql/docker-compose-mysql.yaml
+
+logging:
+  level:
+    org.jooq.tools.LoggerListener: DEBUG

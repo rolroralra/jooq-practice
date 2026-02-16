@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:latest
+    platform: linux/arm64/v8  # ARM64 아키텍처 명시
+    container_name: postgres-local
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: sakila
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      TZ: Asia/Seoul
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/postgres-sakila-schema.sql:/docker-entrypoint-initdb.d/1_init.sql:ro
+      - ./sql/postgres-sakila-insert-data-using-copy.sql:/docker-entrypoint-initdb.d/2_data.sql:ro
+
+volumes:
+  postgres_data:
