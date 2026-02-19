@@ -59,7 +59,9 @@ class FilmRepositoryTest {
             givenFilmTitle);
 
         // Then
-        assertThat(result).isNotEmpty();
+        assertThat(result)
+            .isNotEmpty()
+            .allSatisfy(it -> assertThat(it.priceCategory()).isNotNull());
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.example.jooqpractice.film;
 
+import com.example.jooqpractice.config.converter.PriceCategoryConverter;
 import com.example.jooqpractice.tables.JActor;
 import com.example.jooqpractice.tables.JFilm;
 import com.example.jooqpractice.tables.JFilmActor;
@@ -74,7 +75,7 @@ public class FilmRepository {
                     .when(FILM.RENTAL_RATE.le(BigDecimal.valueOf(1.0)), "Cheap")
                     .when(FILM.RENTAL_RATE.le(BigDecimal.valueOf(3.0)), "Normal")
                     .otherwise("Expensive")
-                    .as("priceCategory"),
+                    .as("priceCategory").convert(new PriceCategoryConverter()),
                 DSL.selectCount()
                     .from(INVENTORY.where(INVENTORY.FILM_ID.eq(FILM.FILM_ID)))
                     .asField("totalInventory")
