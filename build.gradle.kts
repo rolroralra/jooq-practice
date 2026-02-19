@@ -1,4 +1,5 @@
 import org.gradle.kotlin.dsl.annotationProcessor
+import org.jooq.meta.jaxb.ForcedType
 
 val jooqVersion: String by project
 
@@ -123,8 +124,25 @@ jooq {
                     database.apply {
                         name = "org.jooq.meta.mysql.MySQLDatabase"
                         inputSchema = "sakila"
-                        isUnsignedTypes = false
+                        isUnsignedTypes = true
                         excludes = "flyway_schema_history"
+
+                        forcedTypes.addAll(
+                            listOf(
+                                ForcedType().apply {
+                                    userType = "java.lang.Long"
+                                    includeTypes = "int unsigned"
+                                },
+                                ForcedType().apply {
+                                    userType = "java.lang.Integer"
+                                    includeTypes = "tinyint unsigned"
+                                },
+                                ForcedType().apply {
+                                    userType = "java.lang.Integer"
+                                    includeTypes = "smallint unsigned"
+                                },
+                            )
+                        )
                     }
 
                     generate.apply {
@@ -151,6 +169,14 @@ jooq {
                     }
                 }
             }
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("build/generated/jooq")
         }
     }
 }
