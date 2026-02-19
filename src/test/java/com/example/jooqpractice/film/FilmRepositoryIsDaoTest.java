@@ -11,10 +11,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
 
 @SpringBootTest
-class FilmRepositoryTest {
+class FilmRepositoryIsDaoTest {
 
     @Autowired
-    private FilmRepository filmRepository;
+    private FilmRepositoryIsDao filmRepository;
 
     @Test
     @DisplayName("id로 Film을 조회한다.")
@@ -40,7 +40,7 @@ class FilmRepositoryTest {
     @DisplayName("영화와 영화에 출연한 배우 정보를 페이징하여 조회한다.")
     void findFilmWithActorsByPage() {
         List<FilmWithActor> filmWithActorList = filmRepository.findFilmWithActorList(
-            PageRequest.of(1, 5));
+            PageRequest.of(0, 5));
 
         assertThat(filmWithActorList)
             .isNotEmpty()

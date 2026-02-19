@@ -11,10 +11,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
 
 @SpringBootTest
-class FilmRepositoryTest {
+class FilmRepositoryHasDaoTest {
 
     @Autowired
-    private FilmRepository filmRepository;
+    private FilmRepositoryHasDao filmRepository;
 
     @Test
     @DisplayName("id로 Film을 조회한다.")
@@ -40,10 +40,22 @@ class FilmRepositoryTest {
     @DisplayName("영화와 영화에 출연한 배우 정보를 페이징하여 조회한다.")
     void findFilmWithActorsByPage() {
         List<FilmWithActor> filmWithActorList = filmRepository.findFilmWithActorList(
-            PageRequest.of(1, 5));
+            PageRequest.of(0, 5));
 
         assertThat(filmWithActorList)
             .isNotEmpty()
             .allSatisfy(it -> assertThat(it).isNotNull());
+    }
+
+    @Test
+    @DisplayName("영화의 길이가 특정 범위에 속하는 영화를 조회한다.")
+    void findByRangeBetween() {
+        var start = 100;
+        var end = 100;
+        List<Film> result = filmRepository.findByRangeBetween(start, end);
+
+        assertThat(result)
+            .isNotEmpty()
+            .allSatisfy(it -> assertThat(it.getLength()).isBetween(start, end));
     }
 }
