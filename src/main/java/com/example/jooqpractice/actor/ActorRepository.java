@@ -146,14 +146,6 @@ public class ActorRepository {
             .fetchInto(Actor.class);
     }
 
-    private static @NonNull List<Row2<String, String>> getActorRows(List<Actor> actors) {
-        return actors.stream()
-            .map(actor -> DSL.row(
-                actor.getFirstName(),
-                actor.getLastName()))
-            .toList();
-    }
-
     public void update(Actor actor) {
         actorDao.update(actor);
     }
@@ -234,5 +226,13 @@ public class ActorRepository {
         }
 
         actorRecord.delete();
+    }
+
+    private static @NonNull List<Row2<String, String>> getActorRows(List<Actor> actors) {
+        return actors.stream()
+            .map(actor -> DSL.row(
+                actor.getFirstName(),
+                actor.getLastName()))
+            .toList();
     }
 }
