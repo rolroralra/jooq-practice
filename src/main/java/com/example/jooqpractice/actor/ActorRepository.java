@@ -20,6 +20,7 @@ import org.jooq.Row2;
 import org.jooq.impl.DSL;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 
 @Repository
 public class ActorRepository {
@@ -151,5 +152,87 @@ public class ActorRepository {
                 actor.getFirstName(),
                 actor.getLastName()))
             .toList();
+    }
+
+    public void update(Actor actor) {
+        actorDao.update(actor);
+    }
+
+    public void updateWithDto(Long id, ActorUpdateRequest request) {
+        var firstName = StringUtils.hasText(request.firstName()) ? DSL.val(request.firstName()) : DSL.noField(ACTOR.FIRST_NAME);
+        var lastName = StringUtils.hasText(request.lastName()) ? DSL.val(request.lastName()) : DSL.noField(ACTOR.LAST_NAME);
+
+        dslContext.update(ACTOR)
+            .set(ACTOR.FIRST_NAME, firstName)
+            .set(ACTOR.LAST_NAME, lastName)
+            .where(ACTOR.ACTOR_ID.eq(id))
+            .execute();
+    }
+
+    public void updateWithRecord(Long id, ActorUpdateRequest request) {
+        ActorRecord actorRecord = dslContext.selectFrom(ACTOR)
+            .where(ACTOR.ACTOR_ID.eq(id))
+            .fetchOne();
+
+        if (actorRecord == null) {
+            return;
+        }
+
+        if (StringUtils.hasText(request.firstName())) {
+            actorRecord.setFirstName(request.firstName());
+        }
+
+        if (StringUtils.hasText(request.lastName())) {
+            actorRecord.setLastName(request.lastName());
+        }
+
+        dslContext.update(ACTOR)
+            .set(actorRecord)
+            .where(ACTOR.ACTOR_ID.eq(id))
+            .execute();
+    }
+
+    public void updateWithActiveRecord(Long id, ActorUpdateRequest request) {
+        ActorRecord actorRecord = dslContext.selectFrom(ACTOR)
+            .where(ACTOR.ACTOR_ID.eq(id))
+            .fetchOne();
+
+        if (actorRecord == null) {
+            return;
+        }
+
+        if (StringUtils.hasText(request.firstName())) {
+            actorRecord.setFirstName(request.firstName());
+        }
+
+        if (StringUtils.hasText(request.lastName())) {
+            actorRecord.setLastName(request.lastName());
+        }
+
+        // actorRecord.store();  // Upsert
+        // actorRecord.insert(); // Insert Only
+        actorRecord.update();    // Update Only
+    }
+
+    public void deleteByIdWithDao(Long id) {
+        actorDao.deleteById(id);
+    }
+
+    public void deleteByIdWithDslContext(Long id) {
+        dslContext.deleteFrom(ACTOR)
+            .where(ACTOR.ACTOR_ID.eq(id))
+            .execute();
+    }
+
+    public void deleteByIdWithActiveRecord(Long id) {
+        ActorRecord actorRecord = dslContext.selectFrom(ACTOR)
+            .where(ACTOR.ACTOR_ID.eq(id))
+            .fetchOne();
+
+        if (actorRecord == null) {
+            return;
+        }
+
+        actorRecord.delete();
     }
 }

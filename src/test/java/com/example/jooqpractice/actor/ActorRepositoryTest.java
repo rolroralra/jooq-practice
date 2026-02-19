@@ -1,6 +1,7 @@
 package com.example.jooqpractice.actor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.example.jooqpractice.tables.pojos.Actor;
 import com.example.jooqpractice.tables.records.ActorRecord;
@@ -223,7 +224,7 @@ class ActorRepositoryTest {
         List<Actor> actors = List.of(actor1, actor2);
 
         // When
-        actorRepository.bulkInsert(actors);
+        assertThatNoException().isThrownBy(() -> actorRepository.bulkInsert(actors));
     }
 
     @Test
@@ -272,5 +273,180 @@ class ActorRepositoryTest {
                 .hasNoNullFieldsOrProperties()
                 .extracting(Actor::getFirstName, Actor::getLastName)
                 .containsExactly(actor.getFirstName(), actor.getLastName()));
+    }
+
+    @Test
+    @DisplayName("POJO를 통해 Actor를 업데이트한다. (JOOQ에서 제공하는 DAO를 사용)")
+    @Transactional
+    void updateWithPojo() {
+        // Given
+        var actor = new Actor();
+        actor.setFirstName("Tom");
+        actor.setLastName("Cruise");
+        Actor savedActor = actorRepository.saveWithReturning(actor);
+
+        // When
+        savedActor.setFirstName("Suri");
+        actorRepository.update(savedActor); // POJO로 업데이트할 경우, 모든 칼럼이 업데이트된다.
+
+        // Then
+        Optional<Actor> result = actorRepository.findById(savedActor.getActorId());
+
+        assertThat(result)
+            .isPresent()
+            .get()
+            .hasNoNullFieldsOrProperties()
+            .extracting(Actor::getFirstName, Actor::getLastName)
+            .containsExactly("Suri", "Cruise");
+    }
+
+    @Test
+    @DisplayName("DTO를 통해 Actor를 업데이트한다. (DSLContext 사용)")
+    @Transactional
+    void updateWithDto() {
+        // Given
+        var actor = new Actor();
+        actor.setFirstName("Tom");
+        actor.setLastName("Cruise");
+        String givenModifiedFirstName = "Suri";
+
+        Long id = actorRepository.saveWithReturningPkOnly(actor);
+
+        // When
+        var request = ActorUpdateRequest.builder()
+            .firstName(givenModifiedFirstName)
+            .build();
+
+        actorRepository.updateWithDto(id, request);
+
+        // Then
+        Optional<Actor> result = actorRepository.findById(id);
+
+        assertThat(result)
+            .isPresent()
+            .get()
+            .hasNoNullFieldsOrProperties()
+            .extracting(Actor::getFirstName, Actor::getLastName)
+            .containsExactly("Suri", "Cruise");
+    }
+
+    @Test
+    @DisplayName("Record를 통해 Actor를 업데이트한다. (DSLContext 사용)")
+    @Transactional
+    void updateWithRecord() {
+        // Given
+        var actor = new Actor();
+        actor.setFirstName("Tom");
+        actor.setLastName("Cruise");
+        String givenModifiedFirstName = "Suri";
+
+        Long id = actorRepository.saveWithReturningPkOnly(actor);
+
+        // When
+        var request = ActorUpdateRequest.builder()
+            .firstName(givenModifiedFirstName)
+            .build();
+
+        actorRepository.updateWithRecord(id, request);
+
+        // Then
+        Optional<Actor> result = actorRepository.findById(id);
+
+        assertThat(result)
+            .isPresent()
+            .get()
+            .hasNoNullFieldsOrProperties()
+            .extracting(Actor::getFirstName, Actor::getLastName)
+            .containsExactly("Suri", "Cruise");
+    }
+
+    @Test
+    @DisplayName("JOOQ에서 제공하는 Active Record 패턴을 사용하여 Actor를 업데이트한다.")
+    @Transactional
+    void updateWithActiveRecord() {
+        // Given
+        var actor = new Actor();
+        actor.setFirstName("Tom");
+        actor.setLastName("Cruise");
+        String givenModifiedFirstName = "Suri";
+
+        Long id = actorRepository.saveWithReturningPkOnly(actor);
+
+        // When
+        var request = ActorUpdateRequest.builder()
+            .firstName(givenModifiedFirstName)
+            .build();
+
+        actorRepository.updateWithActiveRecord(id, request);
+
+        // Then
+        Optional<Actor> result = actorRepository.findById(id);
+
+        assertThat(result)
+            .isPresent()
+            .get()
+            .hasNoNullFieldsOrProperties()
+            .extracting(Actor::getFirstName, Actor::getLastName)
+            .containsExactly("Suri", "Cruise");
+    }
+
+    @Test
+    @DisplayName("")
+    @Transactional
+    void deleteWithDao() {
+        // Given
+        var actor = new Actor();
+        actor.setFirstName("Tom");
+        actor.setLastName("Cruise");
+
+        Long id = actorRepository.saveWithReturningPkOnly(actor);
+
+        // When
+        actorRepository.deleteByIdWithDao(id);
+
+        // Then
+        Optional<Actor> result = actorRepository.findById(id);
+        assertThat(result)
+            .isNotPresent();
+    }
+
+    @Test
+    @DisplayName("")
+    @Transactional
+    void deleteWithDslContext() {
+        // Given
+        var actor = new Actor();
+        actor.setFirstName("Tom");
+        actor.setLastName("Cruise");
+
+        Long id = actorRepository.saveWithReturningPkOnly(actor);
+
+        // When
+        actorRepository.deleteByIdWithDslContext(id);
+
+        // Then
+        Optional<Actor> result = actorRepository.findById(id);
+        assertThat(result)
+            .isNotPresent();
+    }
+
+    @Test
+    @DisplayName("JOOQ에서 제공하는 Active Record 패턴을 사용하여 Actor를 삭제한다.")
+    @Transactional
+    void deleteWithActiveRecord() {
+        // Given
+        var actor = new Actor();
+        actor.setFirstName("Tom");
+        actor.setLastName("Cruise");
+
+        Long id = actorRepository.saveWithReturningPkOnly(actor);
+
+        // When
+        actorRepository.deleteByIdWithActiveRecord(id);
+
+        // Then
+        Optional<Actor> result = actorRepository.findById(id);
+        assertThat(result)
+            .isNotPresent();
     }
 }

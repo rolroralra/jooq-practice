@@ -72,14 +72,14 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-jooq") {
         exclude(group = "org.jooq", module = "jooq")
     }
-
+    implementation("org.jooq:jooq:${jooqVersion}")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
     annotationProcessor("jakarta.annotation:jakarta.annotation-api")
     annotationProcessor("jakarta.persistence:jakarta.persistence-api")
-
-    implementation("org.jooq:jooq:${jooqVersion}")
-    implementation("org.springframework.boot:spring-boot-starter-webmvc")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    annotationProcessor("org.projectlombok:lombok")
 
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -91,8 +91,7 @@ dependencies {
     jooqGenerator("org.jooq:jooq-meta:${jooqVersion}")
 
     runtimeOnly("com.mysql:mysql-connector-j")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    annotationProcessor("org.projectlombok:lombok")
+
     testImplementation("org.springframework.boot:spring-boot-starter-jooq-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
@@ -148,7 +147,7 @@ jooq {
                     generate.apply {
                         isDaos = true
                         isRecords = true
-                        isImmutablePojos = true
+                        isImmutablePojos = false
                         isFluentSetters = true
                         isJavaTimeTypes = true
                         isDeprecated = false
