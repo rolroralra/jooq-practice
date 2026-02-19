@@ -32,14 +32,16 @@ public class FilmRepository {
     private final DSLContext dslContext;
 
     public Film findById(Long id) {
-        return dslContext.select(FILM.fields())
+        return dslContext
+            .select(FILM.fields())
             .from(FILM)
             .where(FILM.FILM_ID.eq(id))
             .fetchOneInto(Film.class);
     }
 
     public SimpleFilmInfo findSimpleInfoById(Long id) {
-        return dslContext.select(
+        return dslContext
+            .select(
                 FILM.FILM_ID,
                 FILM.TITLE,
                 FILM.DESCRIPTION)
@@ -49,7 +51,8 @@ public class FilmRepository {
     }
 
     public List<FilmWithActor> findFilmWithActorList(Pageable pageable) {
-        return dslContext.select(
+        return dslContext
+            .select(
                 DSL.row(FILM.fields()),
                 DSL.row(FILM_ACTOR.fields()),
                 DSL.row(ACTOR.fields())
@@ -62,14 +65,18 @@ public class FilmRepository {
     }
 
     public List<FilmPriceSummary> findFilmPriceSummaryByFilmTitle(String filmTitle) {
-        return dslContext.select(
+        return dslContext
+            .select(
                 FILM.FILM_ID,
                 FILM.TITLE,
                 FILM.RENTAL_RATE,
-                DSL.case_().when(FILM.RENTAL_RATE.le(BigDecimal.valueOf(1.0)), "Cheap")
-                    .when(FILM.RENTAL_RATE.le(
-                        BigDecimal.valueOf(3.0)), "Normal").otherwise("Expensive").as("priceCategory"),
-                DSL.selectCount().from(INVENTORY.where(INVENTORY.FILM_ID.eq(FILM.FILM_ID)))
+                DSL.case_()
+                    .when(FILM.RENTAL_RATE.le(BigDecimal.valueOf(1.0)), "Cheap")
+                    .when(FILM.RENTAL_RATE.le(BigDecimal.valueOf(3.0)), "Normal")
+                    .otherwise("Expensive")
+                    .as("priceCategory"),
+                DSL.selectCount()
+                    .from(INVENTORY.where(INVENTORY.FILM_ID.eq(FILM.FILM_ID)))
                     .asField("totalInventory")
             ).from(FILM)
             .where(FILM.TITLE.contains(filmTitle))
@@ -79,7 +86,8 @@ public class FilmRepository {
     public List<FilmRentalSummary> findFilmRentalSummaryByFilmTitleOrderByRentalDuration(
         String filmTitle) {
         var averageRentalDurationAlias = "averageRentalDuration";
-        var rentalDurationInfoSubquery = DSL.select(
+        var rentalDurationInfoSubquery = DSL
+            .select(
                 INVENTORY.FILM_ID,
                 DSL.avg(DSL.localDateTimeDiff(DatePart.DAY, RENTAL.RENTAL_DATE, RENTAL.RETURN_DATE))
                     .as(averageRentalDurationAlias))
@@ -89,14 +97,30 @@ public class FilmRepository {
             .groupBy(INVENTORY.FILM_ID)
             .asTable("rentalDurationInfo");
 
-        return dslContext.select(
+        return dslContext
+            .select(
                 FILM.FILM_ID,
                 FILM.TITLE,
                 rentalDurationInfoSubquery.field(averageRentalDurationAlias)
             ).from(FILM)
-            .leftJoin(rentalDurationInfoSubquery).on(FILM.FILM_ID.eq(rentalDurationInfoSubquery.field(INVENTORY.FILM_ID)))
+            .leftJoin(rentalDurationInfoSubquery)
+            .on(FILM.FILM_ID.eq(rentalDurationInfoSubquery.field(INVENTORY.FILM_ID)))
             .where(FILM.TITLE.contains(filmTitle))
-            .orderBy(rentalDurationInfoSubquery.field(averageRentalDurationAlias).desc().nullsLast())
+            .orderBy(
+                rentalDurationInfoSubquery.field(averageRentalDurationAlias).desc().nullsLast())
             .fetchInto(FilmRentalSummary.class);
+    }
+
+    public List<Film> findRentedFilmsByFilmTitle(String filmTitle) {
+        return dslContext
+            .select(FILM.fields())
+            .from(FILM)
+            .where(FILM.TITLE.contains(filmTitle))
+            .andExists(DSL.selectOne()
+                .from(INVENTORY)
+                .leftJoin(RENTAL).on(RENTAL.INVENTORY_ID.eq(INVENTORY.INVENTORY_ID))
+                .where(INVENTORY.FILM_ID.eq(FILM.FILM_ID))
+                .and(RENTAL.RENTAL_DATE.isNotNull()))
+            .fetchInto(Film.class);
     }
 }

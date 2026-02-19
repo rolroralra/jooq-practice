@@ -69,7 +69,8 @@ class FilmRepositoryTest {
         String filmTitle = "EGG";
 
         // When
-        List<FilmRentalSummary> result = filmRepository.findFilmRentalSummaryByFilmTitleOrderByRentalDuration(filmTitle);
+        List<FilmRentalSummary> result = filmRepository.findFilmRentalSummaryByFilmTitleOrderByRentalDuration(
+            filmTitle);
 
         // Then
         assertThat(result)
@@ -77,5 +78,20 @@ class FilmRepositoryTest {
             .allMatch(it -> it.rentalDuration() > 0)
             .isSortedAccordingTo(Comparator.comparing(FilmRentalSummary::rentalDuration).reversed())
             .isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("영화 제목을 포함하는 영화 중 대여 이력이 있는 영화 목록을 조회한다.")
+    void findFilmListHavingRentalHistoryByFilmTitle() {
+        // Given
+        String filmTitle = "EGG";
+
+        // When
+        List<Film> films = filmRepository.findRentedFilmsByFilmTitle(filmTitle);
+
+        // Then
+        assertThat(films)
+            .isNotEmpty()
+            .allMatch(it -> it.getTitle().contains(filmTitle));
     }
 }
