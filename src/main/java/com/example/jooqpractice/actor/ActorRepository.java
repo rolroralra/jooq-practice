@@ -8,13 +8,17 @@ import com.example.jooqpractice.tables.JFilmActor;
 import com.example.jooqpractice.tables.daos.ActorDao;
 import com.example.jooqpractice.tables.pojos.Actor;
 import com.example.jooqpractice.tables.pojos.Film;
+import com.example.jooqpractice.tables.records.ActorRecord;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.jooq.Condition;
 import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.Row2;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -80,5 +84,72 @@ public class ActorRepository {
         }
 
         return field.like("%" + inputValue + "%");
+    }
+
+    public Long saveByDao(Actor actor) {
+        actorDao.insert(actor);
+        return dslContext.lastID().longValue();
+    }
+
+    public Optional<Actor> findById(Long actorId) {
+        return Optional.ofNullable(actorDao.findById(actorId));
+    }
+
+    public ActorRecord saveByActiveRecord(Actor actor) {
+        ActorRecord actorRecord = dslContext.newRecord(ACTOR, actor);
+        actorRecord.insert();
+        return actorRecord;
+    }
+
+    public Long saveWithReturningPkOnly(Actor actor) {
+        return dslContext.insertInto(ACTOR, ACTOR.FIRST_NAME, ACTOR.LAST_NAME)
+            .values(actor.getFirstName(), actor.getLastName())
+            .returningResult(ACTOR.ACTOR_ID)
+            .fetchOneInto(Long.class);
+    }
+
+    public Actor saveWithReturning(Actor actor) {
+        return dslContext.insertInto(ACTOR, ACTOR.FIRST_NAME, ACTOR.LAST_NAME)
+            .values(actor.getFirstName(), actor.getLastName())
+            .returning(ACTOR.fields())
+            .fetchOneInto(Actor.class);
+    }
+
+    public void bulkInsert(List<Actor> actors) {
+        List<Row2<String, String>> rows = getActorRows(actors);
+
+        // Bulk Insert 수행
+        dslContext.insertInto(ACTOR, ACTOR.FIRST_NAME, ACTOR.LAST_NAME)
+            .valuesOfRows(rows)
+            .execute();
+    }
+
+    public List<Long> bulkInsertAndReturnPks(List<Actor> actors) {
+        List<Row2<String, String>> rows = getActorRows(actors);
+
+        // Bulk Insert 후, PK 반환
+        return dslContext.insertInto(ACTOR, ACTOR.FIRST_NAME, ACTOR.LAST_NAME)
+            .valuesOfRows(rows)
+            .returning(ACTOR.ACTOR_ID)
+            .fetch()
+            .getValues(ACTOR.ACTOR_ID);
+    }
+
+    public List<Actor> bulkInsertAndReturnPojos(List<Actor> actors) {
+        List<Row2<String, String>> rows = getActorRows(actors);
+
+        // Bulk Insert 후, 전체 컬럼 반환
+        return dslContext.insertInto(ACTOR, ACTOR.FIRST_NAME, ACTOR.LAST_NAME)
+            .valuesOfRows(rows)
+            .returning(ACTOR.fields())
+            .fetchInto(Actor.class);
+    }
+
+    private static @NonNull List<Row2<String, String>> getActorRows(List<Actor> actors) {
+        return actors.stream()
+            .map(actor -> DSL.row(
+                actor.getFirstName(),
+                actor.getLastName()))
+            .toList();
     }
 }
