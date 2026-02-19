@@ -3,6 +3,7 @@ package com.example.jooqpractice.film;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.jooqpractice.tables.pojos.Film;
+import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,5 +46,36 @@ class FilmRepositoryTest {
         assertThat(filmWithActorList)
             .isNotEmpty()
             .allSatisfy(it -> assertThat(it).isNotNull());
+    }
+
+    @Test
+    @DisplayName("영화 제목을 포함하는 영화의 가격 요약 정보를 조회한다.")
+    void findFilmPriceSummaryByFilmTitle() {
+        // Given
+        String givenFilmTitle = "EGG";
+
+        // When
+        List<FilmPriceSummary> result = filmRepository.findFilmPriceSummaryByFilmTitle(
+            givenFilmTitle);
+
+        // Then
+        assertThat(result).isNotEmpty();
+    }
+
+    @Test
+    @DisplayName("영화 제목을 포함하는 영화의 대여 기간 순으로 영화 대여 요약 정보를 조회한다.")
+    void findFilmRentalSummaryByFilmTitleOrderByRentalDuration() {
+        // Given
+        String filmTitle = "EGG";
+
+        // When
+        List<FilmRentalSummary> result = filmRepository.findFilmRentalSummaryByFilmTitleOrderByRentalDuration(filmTitle);
+
+        // Then
+        assertThat(result)
+            .allMatch(it -> it.filmTitle().contains(filmTitle))
+            .allMatch(it -> it.rentalDuration() > 0)
+            .isSortedAccordingTo(Comparator.comparing(FilmRentalSummary::rentalDuration).reversed())
+            .isNotEmpty();
     }
 }
