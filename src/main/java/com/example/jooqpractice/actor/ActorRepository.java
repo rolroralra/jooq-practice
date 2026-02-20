@@ -235,4 +235,8 @@ public class ActorRepository {
                 actor.getLastName()))
             .toList();
     }
+
+    public ActorRecord findRecordByActorId(Long actorId) {
+        return dslContext.fetchOne(ACTOR, ACTOR.ACTOR_ID.eq(actorId));
+    }
 }
