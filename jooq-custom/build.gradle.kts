@@ -1,4 +1,6 @@
-val jooqVersion: String by project
+import dev.monosoul.jooq.RecommendedVersions
+
+val jooqVersion = RecommendedVersions.JOOQ_VERSION
 
 repositories {
     mavenCentral()

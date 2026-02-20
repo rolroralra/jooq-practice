@@ -1,52 +1,31 @@
+import dev.monosoul.jooq.RecommendedVersions
 import org.gradle.kotlin.dsl.annotationProcessor
 import org.jooq.meta.jaxb.ForcedType
+import org.jooq.meta.jaxb.Generate
+import org.jooq.meta.jaxb.Strategy
 
-val jooqVersion: String by project
-
-buildscript {
-    dependencies {
-        classpath("org.flywaydb:flyway-mysql:10.20.1")
-        classpath("org.testcontainers:testcontainers:1.21.4")
-        classpath("org.testcontainers:mysql:1.21.4")
-        classpath("com.mysql:mysql-connector-j:9.5.0")
-    }
-}
+val jooqVersion = RecommendedVersions.JOOQ_VERSION
+val flywayVersion = RecommendedVersions.FLYWAY_VERSION
+val mysqlVersion: String by project
 
 plugins {
     java
+    idea
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
 //    id("org.jooq.jooq-codegen-gradle") version "3.19.30"  // jooq 공식 플러그인, but 아직 트렌드는 아님
-    id("nu.studer.jooq") version "9.0"
-    idea
+//    id("nu.studer.jooq") version "9.0"                // jooq plugin (test-container 적용 안됨)
+    id("dev.monosoul.jooq-docker") version "8.0.12"     // test-container 적용 가능한 jooq plugin
 }
 
 group = "com.example"
 version = "0.0.1-SNAPSHOT"
 description = "jooq-practice"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-configurations {
-    compileOnly {
-        extendsFrom(configurations.annotationProcessor.get())
-    }
-}
-
 allprojects {
     group = "com.example"
     version = "0.0.1-SNAPSHOT"
 
-    repositories {
-        mavenCentral()
-    }
-}
-
-subprojects {
     apply(plugin = "java")
     apply(plugin = "org.springframework.boot")
     apply(plugin = "io.spring.dependency-management")
@@ -63,8 +42,32 @@ subprojects {
         }
     }
 
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        annotationProcessor("org.projectlombok:lombok")
+        compileOnly("org.projectlombok:lombok")
+
+        testAnnotationProcessor("org.projectlombok:lombok")
+        testCompileOnly("org.projectlombok:lombok")
+
+        testImplementation("org.springframework.boot:spring-boot-testcontainers")
+        testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
+    }
+
+    tasks.jar {
+        enabled = true
+    }
+
+    tasks.bootJar {
+        enabled = false
     }
 }
 
@@ -79,95 +82,78 @@ dependencies {
     annotationProcessor("jakarta.annotation:jakarta.annotation-api")
     annotationProcessor("jakarta.persistence:jakarta.persistence-api")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    annotationProcessor("org.projectlombok:lombok")
 
-    compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 
-    jooqGenerator(project(":jooq-custom"))
-//    jooqGenerator("com.mysql:mysql-connector-j")
-    jooqGenerator("org.jooq:jooq:${jooqVersion}")
-    jooqGenerator("org.jooq:jooq-meta:${jooqVersion}")
+    jooqCodegen(project(":jooq-custom"))
+//    jooqCodegen("com.mysql:mysql-connector-j")
+    jooqCodegen("org.jooq:jooq:${jooqVersion}")
+    jooqCodegen("org.jooq:jooq-meta:${jooqVersion}")
+    jooqCodegen("org.jooq:jooq-codegen:${jooqVersion}")
+    jooqCodegen("org.flywaydb:flyway-core:${flywayVersion}")
+    jooqCodegen("org.flywaydb:flyway-mysql:${flywayVersion}")
 
     runtimeOnly("com.mysql:mysql-connector-j")
 
     testImplementation("org.springframework.boot:spring-boot-starter-jooq-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 jooq {
-    version.set(jooqVersion)
+    version = jooqVersion
+    withContainer {
+        image {
+            name = "mysql:$mysqlVersion"
+            envVars = mapOf(
+                "MYSQL_ROOT_PASSWORD" to "passwd",
+                "MYSQL_DATABASE" to "sakila",
+            )
+        }
 
-    configurations {
-        create("sakila") {
-            jooqConfiguration.apply {
-                logging = org.jooq.meta.jaxb.Logging.WARN
-
-                jdbc.apply {
-                    driver = "com.mysql.cj.jdbc.Driver"
-                    url = "jdbc:mysql://localhost:3306/sakila"
-                    user = System.getenv("MYSQL_USER") ?: "admin"
-                    password = System.getenv("DB_PASSWORD") ?: "admin"
-                }
-
-                generator.apply {
-                    name = "org.jooq.codegen.DefaultGenerator"   // Java jooq code generator
-
-//                    strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
-                    strategy.name = "com.example.jooq.custom.JPrefixGeneratorStrategy"
-
-                    database.apply {
-                        name = "org.jooq.meta.mysql.MySQLDatabase"
-                        inputSchema = "sakila"
-                        isUnsignedTypes = true
-                        excludes = "flyway_schema_history"
-
-                        forcedTypes.addAll(
-                            listOf(
-                                ForcedType().apply {
-                                    userType = "java.lang.Long"
-                                    includeTypes = "int unsigned"
-                                },
-                                ForcedType().apply {
-                                    userType = "java.lang.Integer"
-                                    includeTypes = "tinyint unsigned"
-                                },
-                                ForcedType().apply {
-                                    userType = "java.lang.Integer"
-                                    includeTypes = "smallint unsigned"
-                                },
-                            )
-                        )
-                    }
-
-                    generate.apply {
-                        isDaos = true
-                        isRecords = true
-                        isImmutablePojos = false
-                        isFluentSetters = true
-                        isJavaTimeTypes = true
-                        isDeprecated = false
-
-//                        isJpaAnnotations = true
-//                        jpaVersion = "2.2"
-
-//                        isValidationAnnotations = true
-
-//                        isSpringAnnotations = true
-//                        isSpringDao = true
-
-                    }
-
-                    target.apply {
-                        packageName = "com.example.jooqpractice"
-                        directory = "build/generated/jooq"
-                    }
-                }
+        db {
+            username = "root"
+            password = "passwd"
+            name = "sakila"
+            port = 3306
+            jdbc {
+                schema = "jdbc:mysql"
+                driverClassName = "com.mysql.cj.jdbc.Driver"
             }
+        }
+    }
+}
+
+tasks {
+    generateJooqClasses {
+        schemas.set(listOf("sakila"))
+        basePackageName.set("com.example.jooqpractice")
+        outputDirectory.set(project.layout.buildDirectory.dir("generated/jooq"))
+        includeFlywayTable.set(false)
+
+        usingJavaConfig {
+            generate = Generate()
+                .withJavaTimeTypes(true)
+                .withDeprecated(false)
+                .withDaos(true)
+                .withFluentSetters(true)
+                .withRecords(true)
+
+            withStrategy(
+                Strategy().withName("com.example.jooq.custom.JPrefixGeneratorStrategy")
+            )
+
+            database.withForcedTypes(
+                ForcedType()
+                    .withUserType("java.lang.Long")
+                    .withTypes("int unsigned"),
+                ForcedType()
+                    .withUserType("java.lang.Integer")
+                    .withTypes("tinyint unsigned"),
+                ForcedType()
+                    .withUserType("java.lang.Integer")
+                    .withTypes("smallint unsigned")
+            )
         }
     }
 }
@@ -180,6 +166,6 @@ sourceSets {
     }
 }
 
-
-//tasks.named("generateJooq") {
-//}
+tasks.bootJar {
+    enabled = true
+}

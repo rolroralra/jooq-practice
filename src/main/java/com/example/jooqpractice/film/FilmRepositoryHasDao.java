@@ -31,11 +31,11 @@ public class FilmRepositoryHasDao {
     }
 
     public Film findById(Long id) {
-        return filmDao.fetchOneByJFilmId(id);  // filmDao.findById(id);
+        return filmDao.fetchOneByFilmId(id);  // filmDao.findById(id);
     }
 
     public List<Film> findByRangeBetween(Integer from, Integer to) {
-        return filmDao.fetchRangeOfJLength(from, to);
+        return filmDao.fetchRangeOfLength(from, to);
     }
 
     public SimpleFilmInfo findSimpleInfoById(Long id) {
