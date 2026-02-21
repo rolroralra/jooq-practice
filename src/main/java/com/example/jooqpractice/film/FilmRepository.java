@@ -65,6 +65,36 @@ public class FilmRepository {
             .fetchInto(FilmWithActor.class);
     }
 
+    /**
+     * @deprecated NOT RECOMMENDED
+     */
+    @Deprecated(since = "NOT RECOMMENDED")
+    public List<FilmWithActor> findFilmWithActorListByImplicitPathJoin(Pageable pageable) {
+        return dslContext
+            .select(
+                DSL.row(FILM.fields()),
+                DSL.row(FILM.filmActor().fields()),
+                DSL.row(FILM.filmActor().actor().fields())
+            ).from(FILM)
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .fetchInto(FilmWithActor.class);
+    }
+
+    public List<FilmWithActor> findFilmWithActorListByExplicitPathJoin(Pageable pageable) {
+        return dslContext
+            .select(
+                DSL.row(FILM.fields()),
+                DSL.row(FILM.filmActor().fields()),
+                DSL.row(FILM.filmActor().actor().fields())
+            ).from(FILM)
+            .leftJoin(FILM.filmActor())
+            .leftJoin(FILM.filmActor().actor())
+            .offset(pageable.getOffset())
+            .limit(pageable.getPageSize())
+            .fetchInto(FilmWithActor.class);
+    }
+
     public List<FilmPriceSummary> findFilmPriceSummaryByFilmTitle(String filmTitle) {
         return dslContext
             .select(
