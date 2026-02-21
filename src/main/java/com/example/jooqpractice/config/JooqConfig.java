@@ -9,10 +9,12 @@ import org.springframework.context.annotation.Configuration;
 public class JooqConfig {
     @Bean
     public DefaultConfigurationCustomizer jooqDefaultConfigurationCustomizer() {
-        return c ->
+        return c -> {
+            c.set(PerformanceListener::new);
             c.settings()
                 .withExecuteDeleteWithoutWhere(ExecuteWithoutWhere.THROW)
                 .withExecuteUpdateWithoutWhere(ExecuteWithoutWhere.THROW)
                 .withRenderSchema(false);
+        };
     }
 }
